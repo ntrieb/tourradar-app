@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TourRadar AI Search</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── SCOUT Design System Tokens ─────────────────────────────── */
+    :root {
+      --navy:        #0D2847;
+      --navy-mid:    #1A5276;
+      --teal:        #0B82C4;
+      --teal-light:  #E8F4FD;
+      --bg:          #F5F7FA;
+      --surface:     #FFFFFF;
+      --border:      #E0E6ED;
+      --text:        #1A2B3C;
+      --muted:       #6B7B8D;
+      --success:     #1AAF5D;
+      --warn:        #F59E0B;
+      --radius-card: 12px;
+      --shadow-card: 0 2px 8px rgba(13,40,71,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); }
+
+    /* ── App shell ───────────────────────────────────────────────── */
+    #app    { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    #hdr {
+      background: var(--navy);
+      color: #fff;
+      padding: 0 20px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .hdr-brand { display: flex; align-items: center; gap: 10px; }
+    .hdr-logo  {
+      width: 32px; height: 32px; background: var(--teal); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .hdr-title { font-weight: 800; font-size: 14px; line-height: 1.1; }
+    .hdr-sub   { font-size: 10px; opacity: .55; font-weight: 500; }
+
+    /* ── View toggle ─────────────────────────────────────────────── */
+    .vtoggle          { display: flex; background: rgba(255,255,255,.1); border-radius: 8px; padding: 3px; gap: 2px; }
+    .vtoggle button   { padding: 5px 13px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; background: transparent; color: rgba(255,255,255,.6); display: flex; align-items: center; gap: 5px; }
+    .vtoggle button.active { background: #fff; color: var(--navy); }
+
+    /* ── Main body ───────────────────────────────────────────────── */
+    #main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+    /* ── Chat panel ──────────────────────────────────────────────── */
+    #chatPanel {
+      width: 360px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    #messages {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    /* bubbles */
+    .msg-user { display: flex; justify-content: flex-end; }
+    .msg-user .bbl {
+      background: var(--navy); color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      padding: 10px 14px; max-width: 82%;
+      font-size: 14px; line-height: 1.45;
+    }
+    .msg-ai { display: flex; gap: 8px; align-items: flex-start; }
+    .ai-ava {
+      width: 28px; height: 28px; border-radius: 50%; background: var(--teal);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 10px; font-weight: 800; color: #fff; letter-spacing: -.02em;
+    }
+    .msg-ai .bbl {
+      background: var(--bg); border: 1px solid var(--border);
+      border-left: 3px solid var(--teal);
+      color: var(--text); border-radius: 4px 18px 18px 18px;
+      padding: 10px 14px; max-width: 86%;
+      font-size: 13.5px; line-height: 1.5;
+    }
+    /* typing dots */
+    .dots { display: flex; gap: 4px; padding: 4px 0; }
+    .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: bop 1.2s infinite; }
+    .dots span:nth-child(2) { animation-delay: .18s; }
+    .dots span:nth-child(3) { animation-delay: .36s; }
+    @keyframes bop { 0%,60%,100%{ transform:translateY(0) } 30%{ transform:translateY(-5px) } }
+
+    /* suggestion chips */
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 5px 11px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      background: var(--teal-light); color: var(--teal); border: 1px solid #b3d9f0;
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .chip:hover { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+    /* ── Results panel ───────────────────────────────────────────── */
+    #resultsPanel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    #rToolbar {
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface); display: none;
+      align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    #rLabel  { font-size: 13px; }
+    #rLabel strong { color: var(--text); }
+    #rLabel span   { color: var(--muted); }
+
+    /* empty state */
+    #emptyState {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 32px; color: var(--muted);
+    }
+    #emptyState svg  { margin-bottom: 16px; }
+    #emptyState h3   { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    #emptyState p    { font-size: 13px; }
+
+    /* cards container */
+    #cardsWrap { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+    #cardsGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+
+    /* map container */
+    #mapWrap { flex: 1; position: relative; display: none; }
+    #map     { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* selected tour chip on map */
+    #selChip {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; background: var(--navy); color: #fff;
+      padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      display: none; align-items: center; gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.25); white-space: nowrap; max-width: 90%;
+    }
+    #selChip span { overflow: hidden; text-overflow: ellipsis; }
+    #selChip button {
+      background: rgba(255,255,255,.2); border: none; color: #fff;
+      cursor: pointer; border-radius: 50%; width: 18px; height: 18px;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* ── Input bar ───────────────────────────────────────────────── */
+    #inputBar {
+      padding: 12px 16px; border-top: 1px solid var(--border);
+      background: var(--surface); display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+    }
+    #chatInput {
+      flex: 1; border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 10px 14px; font-size: 14px; color: var(--text);
+      outline: none; resize: none; min-height: 42px; max-height: 100px;
+      line-height: 1.4; font-family: 'Inter', sans-serif; background: var(--bg);
+    }
+    #chatInput:focus { border-color: var(--teal); background: #fff; }
+    #sendBtn {
+      width: 42px; height: 42px; border-radius: 10px; background: var(--navy);
+      border: none; cursor: pointer; color: #fff; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; transition: background .15s;
+    }
+    #sendBtn:hover { background: var(--teal); }
+    #sendBtn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Tour cards ──────────────────────────────────────────────── */
+    .tcard {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card); overflow: hidden;
+      transition: box-shadow .2s, transform .2s; cursor: pointer;
+    }
+    .tcard:hover { box-shadow: 0 8px 24px rgba(13,40,71,.13); transform: translateY(-2px); }
+    .tcard-img   { width: 100%; height: 148px; object-fit: cover; display: block; }
+    .tcard-body  { padding: 12px; }
+    .tcard-op    { font-size: 10px; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; }
+    .tcard-name  { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tcard-tags  { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .tag         { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+    .tag-rat     { background: #FEF3C7; color: #92400E; }
+    .tag-rev     { background: #F0FDF4; color: #166534; }
+    .tag-day     { background: #EFF6FF; color: #1D4ED8; }
+    .tcard-acts  { display: flex; gap: 7px; padding-top: 9px; border-top: 1px solid var(--border); }
+    .btn-p {
+      flex: 1; background: var(--teal); color: #fff; font-size: 12px; font-weight: 700;
+      border: none; border-radius: 8px; padding: 7px 10px; cursor: pointer; transition: background .15s;
+    }
+    .btn-p:hover { background: #0970A8; }
+    .btn-o {
+      background: var(--surface); color: var(--navy); border: 1.5px solid var(--border);
+      font-size: 12px; font-weight: 700; border-radius: 8px; padding: 7px 10px;
+      cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 4px; white-space: nowrap;
+    }
+    .btn-o:hover  { border-color: var(--teal); color: var(--teal); }
+    .btn-o.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+    /* skeleton */
+    .skel {
+      background: linear-gradient(90deg, #e8edf2 25%, #d6dde5 50%, #e8edf2 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ── Map mini-cards carousel ──────────────────────────────────── */
+    #mapCards {
+      position: absolute; bottom: 12px; left: 0; right: 0; z-index: 1000;
+      display: flex; gap: 10px; padding: 0 12px;
+      overflow-x: auto; overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    #mapCards::-webkit-scrollbar { display: none; }
+    #mapCards { scrollbar-width: none; }
+
+    .mcard {
+      flex-shrink: 0; width: 210px;
+      background: var(--surface); border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.2);
+      cursor: pointer; scroll-snap-align: start;
+      display: flex; overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+      border: 2px solid transparent;
+    }
+    .mcard:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+    .mcard.active {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 2px var(--teal), 0 6px 20px rgba(0,0,0,.25);
+      transform: translateY(-3px);
+    }
+    .mcard-color {
+      width: 5px; flex-shrink: 0;
+    }
+    .mcard-img {
+      width: 56px; height: 100%; object-fit: cover; flex-shrink: 0;
+    }
+    .mcard-body {
+      flex: 1; padding: 8px 10px; min-width: 0;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .mcard-op {
+      font-size: 8px; font-weight: 700; color: var(--teal);
+      text-transform: uppercase; letter-spacing: .05em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .mcard-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      line-height: 1.25; margin: 2px 0;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .mcard-meta {
+      font-size: 9px; color: var(--muted); font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    @media (max-width: 767px) {
+      .mcard { width: 170px; }
+      .mcard-img { width: 46px; }
+      .mcard-name { font-size: 10px; }
+    }
+
+    /* ── Leaflet overrides ───────────────────────────────────────── */
+    .scout-pin {
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #fff; border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3); font-family: 'Inter',sans-serif;
+    }
+    .leaflet-popup-content-wrapper { border-radius: 10px !important; box-shadow: 0 4px 16px rgba(0,0,0,.15) !important; }
+    .leaflet-popup-content { margin: 12px 14px !important; }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Mobile ──────────────────────────────────────────────────── */
+    @media (max-width: 767px) {
+      #main         { flex-direction: column; }
+      #chatPanel    { width: 100%; height: 210px; border-right: none; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+      #cardsGrid    { grid-template-columns: 1fr; }
+      #mobileToggle { display: flex !important; }
+      .vtoggle.desktop-only { display: none; }
+      /* Mobile toggle sits on white toolbar, needs dark colors */
+      #mobileToggle { background: var(--bg); border: 1px solid var(--border); }
+      #mobileToggle button { color: var(--muted); }
+      #mobileToggle button.active { background: var(--navy); color: #fff; }
+    }
+    @media (min-width: 768px) {
+      #mobileToggle { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HEADER ───────────────────────────────────────────────────── -->
+  <header id="hdr">
+    <div class="hdr-brand">
+      <div class="hdr-logo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hdr-title">TourRadar AI</div>
+        <div class="hdr-sub">SCOUT Design · MCP Powered</div>
+      </div>
+    </div>
+
+    <!-- Desktop view toggle -->
+    <div class="vtoggle desktop-only" id="desktopToggle">
+      <button id="btnCardsD" class="active" onclick="setView('cards')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Cards
+      </button>
+      <button id="btnMapD" onclick="setView('map')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/></svg>
+        Map
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MAIN ─────────────────────────────────────────────────────── -->
+  <div id="main">
+
+    <!-- CHAT PANEL -->
+    <aside id="chatPanel">
+      <div id="messages">
+        <div class="msg-ai">
+          <div class="ai-ava">AI</div>
+          <div class="bbl">
+            <div style="font-weight:700;margin-bottom:5px;">Hi! I'm your TourRadar AI.</div>
+            <div style="color:var(--muted);font-size:13px;line-height:1.5;">Ask me about any destination, duration, or style — I'll find real tours for you. Try one:</div>
+            <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;" id="suggestions">
+              <span class="chip" onclick="sendSuggestion(this)">Best of Europe</span>
+              <span class="chip" onclick="sendSuggestion(this)">10-day Italy</span>
+              <span class="chip" onclick="sendSuggestion(this)">Safari adventure</span>
+              <span class="chip" onclick="sendSuggestion(this)">Japan highlights</span>
+              <span class="chip" onclick="sendSuggestion(this)">Greek islands</span>
+              <span class="chip" onclick="sendSuggestion(this)">Southeast Asia</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RESULTS PANEL -->
+    <section id="resultsPanel">
+
+      <!-- Toolbar -->
+      <div id="rToolbar">
+        <div id="rLabel"><strong id="rCount"></strong> <span id="rQuery"></span></div>
+        <!-- Mobile toggle -->
+        <div class="vtoggle" id="mobileToggle">
+          <button id="btnCardsM" class="active" onclick="setView('cards')">Cards</button>
+          <button id="btnMapM" onclick="setView('map')">Map</button>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyState">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5">
+          <path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/><path d="M9 4v13M15 7v13"/>
+        </svg>
+        <h3>Start exploring tours</h3>
+        <p>Type a destination or trip idea in the chat to see results here</p>
+      </div>
+
+      <!-- Cards view -->
+      <div id="cardsWrap">
+        <div id="cardsGrid"></div>
+      </div>
+
+      <!-- Map view -->
+      <div id="mapWrap">
+        <div id="map"></div>
+        <div id="selChip">
+          <span id="selName"></span>
+          <button onclick="deselectTour()" title="Show all tours">✕</button>
+        </div>
+        <div id="mapCards"></div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ── INPUT BAR ────────────────────────────────────────────────── -->
+  <div id="inputBar">
+    <textarea id="chatInput" placeholder="Ask about tours… e.g. '2 weeks in Southeast Asia'" rows="1"></textarea>
+    <button id="sendBtn" onclick="handleSend()" title="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ── SCOUT palette for tour polylines / markers ────────────────── */
+const COLORS = ['#0B82C4','#1AAF5D','#E8600B','#9333EA','#EF4444','#06B6D4','#84CC16','#F97316','#EC4899','#6366F1'];
+
+/* ── State ─────────────────────────────────────────────────────── */
+let allTours      = [];
+let tourMapCache  = {};  // tourId → tour map data
+let lmap          = null;
+let layerGroups   = {};  // tourId → L.LayerGroup
+let currentView   = 'cards';
+let selectedId    = null;
+let searching     = false;
+let callId        = 1;
+
+/* ── MCP ────────────────────────────────────────────────────────── */
+const MCP = 'https://ai.tourradar.com/mcp/main';
+
+async function mcpCall(tool, args) {
+  const resp = await fetch(MCP, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: callId++, method: 'tools/call', params: { name: tool, arguments: args } })
+  });
+  const text = await resp.text();
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      const parsed = JSON.parse(line.slice(6));
+      if (parsed.error) throw new Error(parsed.error.message || JSON.stringify(parsed.error));
+      return parsed.result;
+    }
+  }
+  throw new Error('No data in MCP response');
+}
+
+/* ── Helpers ────────────────────────────────────────────────────── */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function strip(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
+function scrollMsgs() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+
+/* ── Chat messages ───────────────────────────────────────────────── */
+function addUserMsg(text) {
+  const el = document.createElement('div');
+  el.className = 'msg-user';
+  el.innerHTML = `<div class="bbl">${esc(text)}</div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollMsgs();
+}
+
+function addAiMsg(html) {
+  const el = document.createElement('div');
+  el.className = 'msg-ai';
+  el.innerHTML = `<div class="ai-ava">AI</div><div class="bbl">${html}</div>`;
+  document.getElementById('messages').appendChild(el);
+  scrollMsgs();
+  return el;
+}
+
+function addTyping() {
+  return addAiMsg('<div class="dots"><span></span><span></span><span></span></div>');
+}
+
+/* ── Suggestions ────────────────────────────────────────────────── */
+function sendSuggestion(chip) {
+  document.getElementById('chatInput').value = chip.textContent.trim();
+  document.getElementById('suggestions')?.remove();
+  handleSend();
+}
+
+/* ── Search flow ─────────────────────────────────────────────────── */
+async function handleSend() {
+  if (searching) return;
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  searching = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addUserMsg(q);
+  const typing = addTyping();
+  document.getElementById('emptyState').style.display = 'none';
+
+  try {
+    const result = await mcpCall('vertex-tour-search', { textSearch: q, display_mode: 'listing' });
+    typing.remove();
+
+    const tours = result?.structuredContent?.tours || [];
+    const total = result?.structuredContent?.totalCount || tours.length;
+
+    if (!tours.length) {
+      addAiMsg(`I couldn't find tours for <strong>"${esc(q)}"</strong>. Try a different destination or travel style.`);
+      document.getElementById('emptyState').style.display = 'flex';
+      return;
+    }
+
+    allTours = tours;
+    selectedId = null;
+
+    const topNames = tours.slice(0, 3)
+      .map(t => `<span style="display:inline-block;padding:3px 10px;background:var(--teal-light);color:var(--teal);border-radius:99px;font-size:11px;font-weight:600;">${esc(t.tour_name)}</span>`)
+      .join('');
+
+    addAiMsg(`Found <strong>${total} tours</strong> for <em>"${esc(q)}"</em>
+      <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;">${topNames}</div>`);
+
+    renderCards(tours);
+    showToolbar(tours.length, q);
+    setView('cards');
+
+    // Load map data in background for all tours
+    loadMapData(tours.map(t => t.tour_id));
+
+  } catch (err) {
+    typing.remove();
+    addAiMsg(`<span style="color:#EF4444;">Something went wrong: ${esc(err.message)}</span>`);
+  } finally {
+    searching = false;
+    document.getElementById('sendBtn').disabled = false;
+  }
+}
+
+/* ── Toolbar ────────────────────────────────────────────────────── */
+function showToolbar(count, q) {
+  const tb = document.getElementById('rToolbar');
+  tb.style.display = 'flex';
+  document.getElementById('rCount').textContent = count + ' tours';
+  document.getElementById('rQuery').textContent = `for "${q}"`;
+}
+
+/* ── View switching ──────────────────────────────────────────────── */
+function setView(view) {
+  currentView = view;
+
+  // Update all toggle buttons
+  ['CardsD','MapD','CardsM','MapM'].forEach(id => {
+    const btn = document.getElementById('btn' + id);
+    if (!btn) return;
+    const isCards = id.startsWith('Cards');
+    btn.classList.toggle('active', (view === 'cards') === isCards);
+  });
+
+  const cardsWrap = document.getElementById('cardsWrap');
+  const mapWrap   = document.getElementById('mapWrap');
+
+  if (view === 'cards') {
+    cardsWrap.style.display = allTours.length ? 'block' : 'none';
+    mapWrap.style.display   = 'none';
+  } else {
+    cardsWrap.style.display = 'none';
+    mapWrap.style.display   = 'flex';
+    initMap();
+    if (allTours.length) {
+      renderMapCards();
+      renderMapAll(selectedId);
+    }
+  }
+}
+
+/* ── Cards rendering ─────────────────────────────────────────────── */
+function renderCards(tours) {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = tours.map((t) => {
+    const img    = t.image?.[0]?.url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=70';
+    const rating = t.ratings?.overall;
+    const rev    = t.reviews_count;
+    return `
+      <div class="tcard" onclick="focusTour(${t.tour_id})">
+        <img class="tcard-img" src="${esc(img)}" alt="${esc(t.tour_name)}"
+             onerror="this.src='https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=70'" />
+        <div class="tcard-body">
+          <div class="tcard-op">${esc(t.operator?.name || '')}</div>
+          <div class="tcard-name">${esc(t.tour_name)}</div>
+          <div class="tcard-tags">
+            ${rating ? `<span class="tag tag-rat">★ ${rating.toFixed(1)}</span>` : ''}
+            ${rev    ? `<span class="tag tag-rev">${rev.toLocaleString()} reviews</span>` : ''}
+            ${t.start_city?.city_name ? `<span class="tag tag-day">From ${esc(t.start_city.city_name)}</span>` : ''}
+          </div>
+          <div class="tcard-acts">
+            <button class="btn-p" onclick="event.stopPropagation();window.open('${esc(t.tour_url)}','_blank')">View Tour ↗</button>
+            <button class="btn-o" id="mapbtn-${t.tour_id}" onclick="event.stopPropagation();focusTour(${t.tour_id})">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3V7z"/></svg>
+              Map
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── Map mini-cards ──────────────────────────────────────────────── */
+function renderMapCards() {
+  const container = document.getElementById('mapCards');
+  if (!container || !allTours.length) return;
+  container.innerHTML = allTours.map((t, idx) => {
+    const color  = COLORS[idx % COLORS.length];
+    const img    = t.image?.[0]?.url || 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=70';
+    const rating = t.ratings?.overall;
+    const meta   = [rating ? `★ ${rating.toFixed(1)}` : '', t.start_city?.city_name ? `From ${t.start_city.city_name}` : ''].filter(Boolean).join(' · ');
+    const isActive = selectedId === t.tour_id;
+    return `
+      <div class="mcard${isActive ? ' active' : ''}" id="mcard-${t.tour_id}" onclick="focusTour(${t.tour_id})">
+        <div class="mcard-color" style="background:${color}"></div>
+        <img class="mcard-img" src="${esc(img)}" alt="" onerror="this.src='https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=70'" />
+        <div class="mcard-body">
+          <div class="mcard-op">${esc(t.operator?.name || '')}</div>
+          <div class="mcard-name">${esc(t.tour_name)}</div>
+          ${meta ? `<div class="mcard-meta">${esc(meta)}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Scroll active card into view
+  if (selectedId) {
+    const el = document.getElementById(`mcard-${selectedId}`);
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 100);
+  }
+}
+
+/* ── Map init ────────────────────────────────────────────────────── */
+function initMap() {
+  if (lmap) { setTimeout(() => lmap.invalidateSize(), 80); return; }
+  lmap = L.map('map', { zoomControl: true }).setView([20, 15], 2);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(lmap);
+}
+
+/* ── Load map data for all tours ────────────────────────────────── */
+async function loadMapData(tourIds) {
+  if (!tourIds.length) return;
+  try {
+    const result = await mcpCall('b2b-tour-map', { tourIds });
+    const tours  = result?.structuredContent?.tours || [];
+    tours.forEach(t => {
+      // Flatten days→locations into a single stops array
+      const stops = [];
+      (t.days || []).forEach(day => {
+        (day.locations || []).forEach(loc => {
+          stops.push({
+            lat: loc.lat,
+            lng: loc.lng,
+            name: loc.cityName || `Stop ${stops.length + 1}`,
+            dayTitle: day.dayTitle || '',
+            dayDescription: day.dayDescription || ''
+          });
+        });
+      });
+      t._stops = stops;
+      tourMapCache[t.tourId] = t;  // tourId is camelCase from b2b-tour-map
+    });
+    if (currentView === 'map' && lmap) renderMapAll(selectedId);
+  } catch (err) {
+    console.warn('Map data fetch failed:', err.message);
+  }
+}
+
+/* ── Render all tours on the map ─────────────────────────────────── */
+function renderMapAll(focusId = null) {
+  if (!lmap) return;
+
+  // Clear existing layer groups
+  Object.values(layerGroups).forEach(g => g.remove());
+  layerGroups = {};
+
+  const allBounds = [];
+
+  allTours.forEach((tour, idx) => {
+    const color   = COLORS[idx % COLORS.length];
+    const isFocus = focusId === tour.tour_id;
+    const isOther = focusId !== null && !isFocus;
+    const mapData = tourMapCache[tour.tour_id];
+
+    const group = L.layerGroup().addTo(lmap);
+    layerGroups[tour.tour_id] = group;
+
+    if (!mapData) {
+      // No itinerary loaded yet — skip silently (will re-render when data arrives)
+      return;
+    }
+
+    const stops = (mapData._stops || []).filter(s => s.lat && s.lng);
+    if (!stops.length) return;
+
+    const coords = stops.map(s => [s.lat, s.lng]);
+
+    // Polyline
+    if (coords.length > 1) {
+      L.polyline(coords, {
+        color,
+        weight:  isFocus ? 4 : (isOther ? 2 : 2.5),
+        opacity: isOther ? 0.18 : 0.75,
+      }).addTo(group);
+    }
+
+    // Markers
+    stops.forEach((stop, si) => {
+      const markerSize = isFocus ? 28 : 20;
+      const fontSize   = isFocus ? 11 : 9;
+      const opacity    = isOther ? 0.2 : 1;
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="scout-pin" style="width:${markerSize}px;height:${markerSize}px;font-size:${fontSize}px;background:${color};opacity:${opacity};">${si + 1}</div>`,
+        iconSize:   [markerSize, markerSize],
+        iconAnchor: [markerSize / 2, markerSize / 2],
+        popupAnchor:[0, -markerSize / 2]
+      });
+
+      const locName = stop.name || `Stop ${si + 1}`;
+      const desc    = stop.dayDescription ? strip(stop.dayDescription).slice(0, 130) : '';
+
+      const popup = `
+        <div style="font-family:'Inter',sans-serif;min-width:190px;max-width:240px;">
+          <div style="font-size:11px;font-weight:700;color:${color};margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em;">Stop ${si + 1}</div>
+          <div style="font-weight:700;font-size:13px;color:#0D2847;margin-bottom:4px;">${esc(locName)}</div>
+          <div style="font-size:11px;font-weight:600;color:#6B7B8D;margin-bottom:${desc ? '6px' : '0'};">${esc(tour.tour_name)}</div>
+          ${desc ? `<div style="font-size:11px;color:#6B7B8D;line-height:1.45;">${esc(desc)}…</div>` : ''}
+          <button onclick="focusTour(${tour.tour_id})" style="margin-top:8px;width:100%;padding:5px;background:#0D2847;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Focus this tour</button>
+        </div>`;
+
+      L.marker([stop.lat, stop.lng], { icon })
+        .bindPopup(popup)
+        .addTo(group);
+
+      allBounds.push([stop.lat, stop.lng]);
+    });
+  });
+
+  // Fit bounds
+  if (focusId) {
+    const focusData = tourMapCache[focusId];
+    const focusCoords = (focusData?._stops || [])
+      .filter(s => s.lat && s.lng)
+      .map(s => [s.lat, s.lng]);
+    if (focusCoords.length) {
+      try { lmap.fitBounds(focusCoords, { paddingTopLeft: [50, 50], paddingBottomRight: [50, 110], maxZoom: 10 }); } catch {}
+    }
+  } else if (allBounds.length) {
+    try { lmap.fitBounds(allBounds, { paddingTopLeft: [30, 30], paddingBottomRight: [30, 110], maxZoom: 8 }); } catch {}
+  }
+
+  setTimeout(() => lmap?.invalidateSize(), 80);
+}
+
+/* ── Focus / deselect tour ───────────────────────────────────────── */
+function focusTour(tourId) {
+  selectedId = tourId;
+
+  // Update map button states on cards
+  document.querySelectorAll('[id^="mapbtn-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById(`mapbtn-${tourId}`)?.classList.add('active');
+
+  // Update mini-card highlight
+  document.querySelectorAll('.mcard').forEach(c => c.classList.remove('active'));
+  const activeCard = document.getElementById(`mcard-${tourId}`);
+  if (activeCard) {
+    activeCard.classList.add('active');
+    activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
+
+  // Show chip
+  const tour = allTours.find(t => t.tour_id === tourId);
+  if (tour) {
+    document.getElementById('selName').textContent = tour.tour_name;
+    document.getElementById('selChip').style.display = 'flex';
+  }
+
+  setView('map');
+}
+
+function deselectTour() {
+  selectedId = null;
+  document.getElementById('selChip').style.display = 'none';
+  document.querySelectorAll('[id^="mapbtn-"]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mcard').forEach(c => c.classList.remove('active'));
+  renderMapAll(null);
+}
+
+/* ── Auto-resize textarea ───────────────────────────────────────── */
+document.getElementById('chatInput').addEventListener('input', function () {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+});
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+
+/* ── Resize → fix Leaflet ────────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  if (lmap) setTimeout(() => lmap.invalidateSize(), 100);
+});
+</script>
+</body>
+</html>
