@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TourRadar Video Creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── SCOUT Design System Tokens ─────────────────────────────── */
+    :root {
+      --navy:        #0D2847;
+      --navy-mid:    #1A5276;
+      --teal:        #0B82C4;
+      --teal-light:  #E8F4FD;
+      --bg:          #F5F7FA;
+      --surface:     #FFFFFF;
+      --border:      #E0E6ED;
+      --text:        #1A2B3C;
+      --muted:       #6B7B8D;
+      --success:     #1AAF5D;
+      --warn:        #F59E0B;
+      --error:       #EF4444;
+      --radius-card: 12px;
+      --shadow-card: 0 2px 8px rgba(13,40,71,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); }
+
+    /* ── App shell ───────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    #hdr {
+      background: var(--navy);
+      color: #fff;
+      padding: 0 20px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+    .hdr-brand { display: flex; align-items: center; gap: 10px; }
+    .hdr-logo {
+      width: 32px; height: 32px; background: var(--teal); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .hdr-title { font-weight: 800; font-size: 14px; line-height: 1.1; }
+    .hdr-sub   { font-size: 10px; opacity: .55; font-weight: 500; }
+
+    /* ── Step Indicator ──────────────────────────────────────────── */
+    .steps { display: flex; align-items: center; gap: 4px; }
+    .step-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 11px; font-weight: 700;
+      background: rgba(255,255,255,.08); color: rgba(255,255,255,.4);
+      transition: all .2s;
+    }
+    .step-pill.active { background: var(--teal); color: #fff; }
+    .step-pill.done   { background: var(--success); color: #fff; }
+    .step-num {
+      width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800;
+      background: rgba(255,255,255,.15);
+    }
+    .step-pill.active .step-num { background: rgba(255,255,255,.25); }
+    .step-pill.done .step-num   { background: rgba(255,255,255,.25); }
+    .step-label { display: none; }
+    @media (min-width: 768px) { .step-label { display: inline; } }
+
+    /* ── Wizard Content ──────────────────────────────────────────── */
+    #wizardContent {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .step-view { display: none; width: 100%; max-width: 900px; }
+    .step-view.active { display: block; }
+
+    .step-title {
+      font-size: 22px; font-weight: 800; color: var(--navy);
+      margin-bottom: 6px;
+    }
+    .step-subtitle {
+      font-size: 14px; color: var(--muted); margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────────── */
+    #wizardFooter {
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .btn {
+      padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all .15s; border: none; font-family: 'Inter', sans-serif;
+    }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: var(--teal); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary:disabled:hover { background: var(--navy); }
+    .btn-back { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-back:hover { border-color: var(--teal); color: var(--teal); }
+    .btn-teal { background: var(--teal); color: #fff; }
+    .btn-teal:hover { background: #0970A8; }
+    .btn-teal:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-teal:disabled:hover { background: var(--teal); }
+
+    /* ── Search ──────────────────────────────────────────────────── */
+    .search-bar {
+      display: flex; gap: 10px; margin-bottom: 16px;
+    }
+    .search-input {
+      flex: 1; border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 16px; font-size: 14px; color: var(--text);
+      outline: none; font-family: 'Inter', sans-serif; background: var(--surface);
+    }
+    .search-input:focus { border-color: var(--teal); }
+    .search-btn {
+      padding: 12px 20px; border-radius: 12px; background: var(--navy);
+      border: none; color: #fff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background .15s; font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+    .search-btn:hover { background: var(--teal); }
+    .search-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .chip {
+      display: inline-flex; align-items: center;
+      padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      background: var(--teal-light); color: var(--teal); border: 1px solid #b3d9f0;
+      cursor: pointer; transition: all .15s;
+    }
+    .chip:hover { background: var(--teal); color: #fff; border-color: var(--teal); }
+
+    /* ── Tour Cards Grid ─────────────────────────────────────────── */
+    .tour-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 600px) { .tour-grid { grid-template-columns: 1fr; } }
+
+    .tcard {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius-card); overflow: hidden;
+      transition: all .2s; cursor: pointer; position: relative;
+    }
+    .tcard:hover { box-shadow: 0 8px 24px rgba(13,40,71,.13); transform: translateY(-2px); }
+    .tcard.selected { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(11,130,196,.2); }
+    .tcard-check {
+      position: absolute; top: 10px; right: 10px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--teal); color: #fff;
+      display: none; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; z-index: 2;
+    }
+    .tcard.selected .tcard-check { display: flex; }
+    .tcard-img   { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .tcard-body  { padding: 14px; }
+    .tcard-op    { font-size: 10px; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+    .tcard-name  { font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tcard-tags  { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag         { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; }
+    .tag-rat     { background: #FEF3C7; color: #92400E; }
+    .tag-rev     { background: #F0FDF4; color: #166534; }
+    .tag-city    { background: #EFF6FF; color: #1D4ED8; }
+
+    /* ── Skeleton ────────────────────────────────────────────────── */
+    .skel {
+      background: linear-gradient(90deg, #e8edf2 25%, #d6dde5 50%, #e8edf2 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .skel-card { border-radius: var(--radius-card); overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
+
+    /* ── Image Grid (Step 2) ─────────────────────────────────────── */
+    .img-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) { .img-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .img-item {
+      position: relative; border-radius: 10px; overflow: hidden;
+      cursor: pointer; border: 3px solid transparent;
+      transition: all .2s;
+    }
+    .img-item.selected { border-color: var(--teal); }
+    .img-item img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .img-check {
+      position: absolute; top: 8px; right: 8px;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+      background: rgba(0,0,0,.3); transition: all .2s;
+    }
+    .img-item.selected .img-check { background: var(--teal); }
+    .img-order {
+      position: absolute; bottom: 8px; left: 8px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      display: none; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+    }
+    .img-item.selected .img-order { display: flex; }
+
+    /* Selected images strip */
+    .img-strip {
+      display: flex; gap: 10px; padding: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card); margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    .strip-item {
+      flex-shrink: 0; width: 100px; text-align: center;
+    }
+    .strip-item img {
+      width: 100px; height: 68px; object-fit: cover;
+      border-radius: 8px; border: 2px solid var(--teal);
+    }
+    .strip-label {
+      font-size: 10px; font-weight: 700; color: var(--teal);
+      margin-top: 4px;
+    }
+    .img-counter {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 16px;
+    }
+    .img-counter span { color: var(--teal); }
+    .img-warn {
+      color: var(--warn); font-size: 12px; font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    /* ── Persona Cards (Step 3) ──────────────────────────────────── */
+    .persona-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .persona-card {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: var(--radius-card); padding: 20px;
+      cursor: pointer; transition: all .2s; position: relative;
+    }
+    .persona-card:hover { box-shadow: var(--shadow-card); transform: translateY(-1px); }
+    .persona-card.selected { border-color: var(--teal); background: var(--teal-light); }
+    .persona-icon { font-size: 32px; margin-bottom: 10px; }
+    .persona-name { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .persona-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .persona-radio {
+      position: absolute; top: 14px; right: 14px;
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--surface);
+      transition: all .2s;
+    }
+    .persona-card.selected .persona-radio {
+      border-color: var(--teal); background: var(--teal);
+      box-shadow: inset 0 0 0 3px #fff;
+    }
+
+    /* ── Script Display (Step 4) ─────────────────────────────────── */
+    .script-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-card); overflow: hidden;
+    }
+    .script-section {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    }
+    .script-section:last-child { border-bottom: none; }
+    .script-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: 6px;
+    }
+    .script-label-hook { color: var(--teal); }
+    .script-label-scene { color: var(--navy-mid); }
+    .script-label-cta { color: var(--success); }
+    .script-text { font-size: 14px; line-height: 1.6; color: var(--text); }
+    .script-scene {
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .script-scene-img {
+      width: 80px; height: 54px; border-radius: 8px;
+      object-fit: cover; flex-shrink: 0;
+    }
+    .script-scene-body { flex: 1; }
+    .script-scene-overlay {
+      font-size: 12px; font-weight: 600; color: var(--teal);
+      background: var(--teal-light); padding: 3px 8px;
+      border-radius: 6px; display: inline-block; margin-top: 6px;
+    }
+    .script-duration {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      background: var(--bg); padding: 2px 8px; border-radius: 99px;
+      margin-left: 8px;
+    }
+    .script-actions {
+      display: flex; gap: 10px; margin-top: 20px;
+    }
+    .edit-prompt {
+      display: none; margin-top: 16px;
+    }
+    .edit-prompt.visible { display: block; }
+    .edit-prompt textarea {
+      width: 100%; min-height: 100px; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px; font-size: 13px;
+      font-family: 'Inter', sans-serif; color: var(--text);
+      outline: none; resize: vertical; background: var(--bg);
+    }
+    .edit-prompt textarea:focus { border-color: var(--teal); background: var(--surface); }
+    .edit-prompt-label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* ── Typing dots ─────────────────────────────────────────────── */
+    .dots { display: flex; gap: 5px; padding: 8px 0; justify-content: center; }
+    .dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); animation: bop 1.2s infinite; }
+    .dots span:nth-child(2) { animation-delay: .18s; }
+    .dots span:nth-child(3) { animation-delay: .36s; }
+    @keyframes bop { 0%,60%,100%{ transform:translateY(0) } 30%{ transform:translateY(-6px) } }
+
+    /* ── Video Player (Step 5) ───────────────────────────────────── */
+    .video-container {
+      text-align: center; max-width: 640px; margin: 0 auto;
+    }
+    .video-container video {
+      width: 100%; border-radius: var(--radius-card);
+      box-shadow: 0 8px 32px rgba(13,40,71,.15);
+    }
+    .video-actions {
+      display: flex; gap: 12px; justify-content: center; margin-top: 20px;
+    }
+    .progress-area {
+      text-align: center; padding: 40px 0;
+    }
+    .progress-bar-wrap {
+      width: 100%; max-width: 400px; height: 6px;
+      background: var(--border); border-radius: 3px;
+      margin: 16px auto; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; background: var(--teal); border-radius: 3px;
+      width: 0%; transition: width .3s;
+    }
+    .progress-bar.indeterminate {
+      width: 40%; animation: slide 1.2s infinite ease-in-out;
+    }
+    @keyframes slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(350%); }
+    }
+    .progress-status {
+      font-size: 14px; font-weight: 600; color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .progress-elapsed {
+      font-size: 12px; color: var(--muted);
+    }
+    .error-msg {
+      background: #FEF2F2; border: 1px solid #FECACA;
+      border-radius: 10px; padding: 16px;
+      color: var(--error); font-size: 13px; font-weight: 600;
+      margin: 20px 0; text-align: center;
+    }
+
+    /* ── Empty / info states ─────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 48px 20px; color: var(--muted);
+    }
+    .empty-state svg { margin-bottom: 12px; }
+    .empty-state h3 { font-size: 16px; color: var(--text); margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Mobile ──────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      #hdr { padding: 0 12px; height: 48px; }
+      .hdr-title { font-size: 12px; }
+      .hdr-sub { display: none; }
+      .steps { gap: 3px; }
+      .step-pill { padding: 3px 8px; font-size: 10px; }
+      .step-num { width: 16px; height: 16px; font-size: 9px; }
+      #wizardContent { padding: 16px; }
+      .step-title { font-size: 18px; }
+      .step-subtitle { font-size: 13px; }
+      .persona-grid { grid-template-columns: 1fr; }
+      .search-bar { flex-direction: column; }
+      .search-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── HEADER ───────────────────────────────────────────────────── -->
+  <header id="hdr">
+    <div class="hdr-brand">
+      <div class="hdr-logo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="hdr-title">TourRadar Video Creator</div>
+        <div class="hdr-sub">SCOUT Design · MCP + Nano Banana</div>
+      </div>
+    </div>
+
+    <div class="steps" id="stepIndicator">
+      <div class="step-pill active" data-step="1">
+        <span class="step-num">1</span><span class="step-label">Search</span>
+      </div>
+      <div class="step-pill" data-step="2">
+        <span class="step-num">2</span><span class="step-label">Images</span>
+      </div>
+      <div class="step-pill" data-step="3">
+        <span class="step-num">3</span><span class="step-label">Persona</span>
+      </div>
+      <div class="step-pill" data-step="4">
+        <span class="step-num">4</span><span class="step-label">Script</span>
+      </div>
+      <div class="step-pill" data-step="5">
+        <span class="step-num">5</span><span class="step-label">Video</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── WIZARD CONTENT ──────────────────────────────────────────── -->
+  <div id="wizardContent">
+
+    <!-- ── STEP 1: Search & Select Tour ──────────────────────────── -->
+    <div class="step-view active" id="step1">
+      <h2 class="step-title">Find your tour</h2>
+      <p class="step-subtitle">Search for a tour and select the one you want to create a video for.</p>
+
+      <div class="search-bar">
+        <input class="search-input" id="searchInput" type="text" placeholder="Search tours... e.g. 'Best of Italy'" />
+        <button class="search-btn" id="searchBtn" onclick="doSearch()">Search</button>
+      </div>
+
+      <div class="chips" id="searchChips">
+        <span class="chip" onclick="quickSearch(this)">Best of Italy</span>
+        <span class="chip" onclick="quickSearch(this)">Greek Islands</span>
+        <span class="chip" onclick="quickSearch(this)">Safari Adventure</span>
+        <span class="chip" onclick="quickSearch(this)">Japan Highlights</span>
+        <span class="chip" onclick="quickSearch(this)">Peru & Machu Picchu</span>
+        <span class="chip" onclick="quickSearch(this)">Scandinavia</span>
+      </div>
+
+      <div id="tourResults"></div>
+    </div>
+
+    <!-- ── STEP 2: Select Images ─────────────────────────────────── -->
+    <div class="step-view" id="step2">
+      <h2 class="step-title">Select 5 images</h2>
+      <p class="step-subtitle" id="step2Sub">Pick the images that will appear in your video, in order.</p>
+
+      <div class="img-counter" id="imgCounter">Selected: <span>0</span>/5</div>
+
+      <div id="imgStripWrap" style="display:none;">
+        <div class="img-strip" id="imgStrip"></div>
+      </div>
+
+      <div id="imgWarn" class="img-warn" style="display:none;"></div>
+      <div class="img-grid" id="imgGrid"></div>
+      <div id="imgLoading" style="display:none;text-align:center;padding:40px;">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <p style="margin-top:12px;font-size:13px;color:var(--muted);">Loading tour images...</p>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Choose Persona ────────────────────────────────── -->
+    <div class="step-view" id="step3">
+      <h2 class="step-title">Choose a voice</h2>
+      <p class="step-subtitle">This persona will shape the tone and style of your video script.</p>
+
+      <div class="persona-grid" id="personaGrid"></div>
+    </div>
+
+    <!-- ── STEP 4: Review Script ─────────────────────────────────── -->
+    <div class="step-view" id="step4">
+      <h2 class="step-title">Your video script</h2>
+      <p class="step-subtitle" id="step4Sub">Review the generated script. Edit the prompt if needed before creating your video.</p>
+
+      <div id="scriptLoading" style="display:none;text-align:center;padding:40px;">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <p style="margin-top:12px;font-size:13px;color:var(--muted);">Generating your video script...</p>
+      </div>
+
+      <div id="scriptContent" style="display:none;"></div>
+    </div>
+
+    <!-- ── STEP 5: Video Preview ─────────────────────────────────── -->
+    <div class="step-view" id="step5">
+      <h2 class="step-title">Your video</h2>
+      <p class="step-subtitle">Generate your social media video and download it.</p>
+
+      <div id="videoPreCreate" style="text-align:center;padding:20px 0;">
+        <p style="font-size:14px;color:var(--muted);margin-bottom:24px;">
+          Ready to create a <strong>12-second video</strong> from your selected images and script.
+        </p>
+        <button class="btn btn-teal" id="createVideoBtn" onclick="createVideo()" style="padding:14px 40px;font-size:15px;">
+          Create Video
+        </button>
+      </div>
+
+      <div id="videoProgress" class="progress-area" style="display:none;">
+        <p class="progress-status" id="progressStatus">Queued...</p>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar indeterminate" id="progressBar"></div>
+        </div>
+        <p class="progress-elapsed" id="progressElapsed"></p>
+      </div>
+
+      <div id="videoError" class="error-msg" style="display:none;"></div>
+
+      <div id="videoPlayer" class="video-container" style="display:none;">
+        <video id="videoEl" controls></video>
+        <div class="video-actions">
+          <a id="downloadLink" class="btn btn-primary" download="tourradar-video.mp4">Download Video</a>
+          <button class="btn btn-back" onclick="resetWizard()">Create Another</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── FOOTER ──────────────────────────────────────────────────── -->
+  <div id="wizardFooter">
+    <button class="btn btn-back" id="backBtn" onclick="prevStep()" style="visibility:hidden;">Back</button>
+    <div style="font-size:11px;color:var(--muted);" id="footerHint"></div>
+    <button class="btn btn-primary" id="nextBtn" onclick="nextStep()" disabled>Next</button>
+  </div>
+
+</div>
+
+<script>
+/* ── MCP client ─────────────────────────────────────────────────── */
+const MCP = 'https://ai.tourradar.com/mcp/main';
+let callId = 1;
+
+async function mcpCall(tool, args) {
+  const resp = await fetch(MCP, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: callId++, method: 'tools/call', params: { name: tool, arguments: args } })
+  });
+  const text = await resp.text();
+  for (const line of text.split('\n')) {
+    if (line.startsWith('data: ')) {
+      const parsed = JSON.parse(line.slice(6));
+      if (parsed.error) throw new Error(parsed.error.message || JSON.stringify(parsed.error));
+      return parsed.result;
+    }
+  }
+  throw new Error('No data in MCP response');
+}
+
+/* ── Helpers ────────────────────────────────────────────────────── */
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function strip(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=70';
+
+/* ── State ──────────────────────────────────────────────────────── */
+let currentStep = 1;
+let searchResults = [];
+let selectedTour = null;
+let tourDetails = null;
+let allImages = [];         // all images from tour details
+let selectedImages = [];    // ordered array of { url, description }
+let selectedPersona = 'adventure_seeker';
+let script = null;
+let editedPrompt = null;
+let videoId = null;
+let videoUrl = null;
+let pollTimer = null;
+let pollStartTime = null;
+let pollCount = 0;
+
+/* ── Personas ───────────────────────────────────────────────────── */
+const PERSONAS = [
+  { id: 'adventure_seeker', name: 'Adventure Seeker', icon: '\u26F0\uFE0F', desc: 'Energetic and bold \u2014 speaks to thrill-seekers with action-packed energy' },
+  { id: 'luxury_traveler', name: 'Luxury Traveler', icon: '\uD83D\uDC51', desc: 'Sophisticated and refined \u2014 emphasizes exclusivity and premium experiences' },
+  { id: 'family_explorer', name: 'Family Explorer', icon: '\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66', desc: 'Warm and inclusive \u2014 highlights family-friendly moments and bonding' },
+  { id: 'culture_enthusiast', name: 'Culture Enthusiast', icon: '\uD83D\uDCDA', desc: 'Curious and knowledgeable \u2014 passionate about heritage and local traditions' },
+  { id: 'budget_backpacker', name: 'Budget Backpacker', icon: '\uD83C\uDF92', desc: 'Casual and relatable \u2014 shows that incredible travel is accessible to all' },
+];
+
+/* ── Step Navigation ────────────────────────────────────────────── */
+function goToStep(step) {
+  if (step < 1 || step > 5) return;
+  currentStep = step;
+
+  // Show/hide step views
+  document.querySelectorAll('.step-view').forEach((el, i) => {
+    el.classList.toggle('active', i + 1 === step);
+  });
+
+  // Update step indicator
+  document.querySelectorAll('.step-pill').forEach(pill => {
+    const s = parseInt(pill.dataset.step);
+    pill.classList.remove('active', 'done');
+    if (s === step) pill.classList.add('active');
+    else if (s < step) pill.classList.add('done');
+  });
+
+  // Update footer
+  document.getElementById('backBtn').style.visibility = step === 1 ? 'hidden' : 'visible';
+  document.getElementById('nextBtn').style.display = step === 5 ? 'none' : '';
+  updateNextBtn();
+  updateFooterHint();
+
+  // Trigger step-specific initialization
+  if (step === 2 && selectedTour && !tourDetails) loadTourDetails();
+  if (step === 3) renderPersonas();
+  if (step === 4 && !script) generateScript();
+}
+
+function nextStep() {
+  if (!canAdvance()) return;
+  goToStep(currentStep + 1);
+}
+
+function prevStep() {
+  goToStep(currentStep - 1);
+}
+
+function canAdvance() {
+  switch (currentStep) {
+    case 1: return !!selectedTour;
+    case 2: return selectedImages.length === 5;
+    case 3: return !!selectedPersona;
+    case 4: return !!script;
+    case 5: return false; // no next from step 5
+    default: return false;
+  }
+}
+
+function updateNextBtn() {
+  document.getElementById('nextBtn').disabled = !canAdvance();
+}
+
+function updateFooterHint() {
+  const hints = {
+    1: selectedTour ? `Selected: ${selectedTour.tour_name}` : 'Select a tour to continue',
+    2: `${selectedImages.length}/5 images selected`,
+    3: `Voice: ${PERSONAS.find(p => p.id === selectedPersona)?.name || ''}`,
+    4: script ? 'Script ready' : 'Generating script...',
+    5: ''
+  };
+  document.getElementById('footerHint').textContent = hints[currentStep] || '';
+}
+
+function resetWizard() {
+  searchResults = [];
+  selectedTour = null;
+  tourDetails = null;
+  allImages = [];
+  selectedImages = [];
+  selectedPersona = 'adventure_seeker';
+  script = null;
+  editedPrompt = null;
+  videoId = null;
+  videoUrl = null;
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = null;
+  pollCount = 0;
+
+  document.getElementById('tourResults').innerHTML = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('videoPreCreate').style.display = '';
+  document.getElementById('videoProgress').style.display = 'none';
+  document.getElementById('videoPlayer').style.display = 'none';
+  document.getElementById('videoError').style.display = 'none';
+  document.getElementById('scriptContent').style.display = 'none';
+  document.getElementById('scriptLoading').style.display = 'none';
+
+  goToStep(1);
+}
+
+/* ── Step 1: Search ─────────────────────────────────────────────── */
+function quickSearch(chip) {
+  document.getElementById('searchInput').value = chip.textContent.trim();
+  doSearch();
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Searching...';
+  selectedTour = null;
+  updateNextBtn();
+
+  // Show skeletons
+  const resultsEl = document.getElementById('tourResults');
+  resultsEl.innerHTML = `<div class="tour-grid">${Array(4).fill(`
+    <div class="skel-card">
+      <div class="skel" style="height:160px;border-radius:0;"></div>
+      <div style="padding:14px;">
+        <div class="skel" style="height:10px;width:60px;margin-bottom:8px;"></div>
+        <div class="skel" style="height:14px;width:80%;margin-bottom:8px;"></div>
+        <div class="skel" style="height:10px;width:50%;"></div>
+      </div>
+    </div>`).join('')}</div>`;
+
+  try {
+    const result = await mcpCall('vertex-tour-search', { textSearch: q, display_mode: 'listing' });
+    const tours = result?.structuredContent?.tours || [];
+    searchResults = tours;
+
+    if (!tours.length) {
+      resultsEl.innerHTML = `<div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <h3>No tours found</h3>
+        <p>Try a different search term or destination.</p>
+      </div>`;
+      return;
+    }
+
+    renderTourResults(tours);
+  } catch (err) {
+    resultsEl.innerHTML = `<div class="error-msg">Search failed: ${esc(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search';
+  }
+}
+
+function renderTourResults(tours) {
+  const html = tours.map(t => {
+    const img = t.image?.[0]?.url || FALLBACK_IMG;
+    const rating = t.ratings?.overall;
+    const rev = t.reviews_count;
+    const city = t.start_city?.city_name;
+    const isSelected = selectedTour?.tour_id === t.tour_id;
+    return `
+      <div class="tcard${isSelected ? ' selected' : ''}" onclick="selectTour(${t.tour_id})" data-tour-id="${t.tour_id}">
+        <div class="tcard-check">\u2713</div>
+        <img class="tcard-img" src="${esc(img)}" alt="${esc(t.tour_name)}"
+             onerror="this.src='${FALLBACK_IMG}'" />
+        <div class="tcard-body">
+          <div class="tcard-op">${esc(t.operator?.name || '')}</div>
+          <div class="tcard-name">${esc(t.tour_name)}</div>
+          <div class="tcard-tags">
+            ${rating ? `<span class="tag tag-rat">\u2605 ${rating.toFixed(1)}</span>` : ''}
+            ${rev ? `<span class="tag tag-rev">${rev.toLocaleString()} reviews</span>` : ''}
+            ${city ? `<span class="tag tag-city">From ${esc(city)}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('tourResults').innerHTML = `<div class="tour-grid">${html}</div>`;
+}
+
+function selectTour(tourId) {
+  const tour = searchResults.find(t => t.tour_id === tourId);
+  if (!tour) return;
+
+  // Reset downstream state when changing tour
+  if (selectedTour?.tour_id !== tourId) {
+    tourDetails = null;
+    allImages = [];
+    selectedImages = [];
+    script = null;
+    editedPrompt = null;
+    videoId = null;
+    videoUrl = null;
+  }
+
+  selectedTour = tour;
+
+  // Update card visuals
+  document.querySelectorAll('.tcard').forEach(card => {
+    card.classList.toggle('selected', parseInt(card.dataset.tourId) === tourId);
+  });
+
+  updateNextBtn();
+  updateFooterHint();
+}
+
+/* ── Step 2: Image Selection ────────────────────────────────────── */
+async function loadTourDetails() {
+  if (!selectedTour) return;
+
+  document.getElementById('imgGrid').innerHTML = '';
+  document.getElementById('imgLoading').style.display = 'block';
+  document.getElementById('imgStripWrap').style.display = 'none';
+  document.getElementById('imgWarn').style.display = 'none';
+
+  try {
+    const result = await mcpCall('b2b-tour-details', { tourId: selectedTour.tour_id });
+    const tour = result?.structuredContent?.tour || result?.structuredContent || {};
+    tourDetails = tour;
+
+    // Extract images — try multiple paths
+    const images = tour.images || tour.image || [];
+    allImages = images.map((img, i) => ({
+      url: typeof img === 'string' ? img : (img.url || img.src || ''),
+      description: img.alt || img.description || img.caption || `Tour image ${i + 1}`
+    })).filter(img => img.url);
+
+    document.getElementById('step2Sub').textContent =
+      `${esc(selectedTour.tour_name)} \u2014 pick 5 images for your video.`;
+
+    if (allImages.length < 5) {
+      document.getElementById('imgWarn').textContent =
+        `This tour only has ${allImages.length} image(s). You need at least 5. Try selecting a different tour.`;
+      document.getElementById('imgWarn').style.display = 'block';
+    }
+
+    // Pre-select first 5
+    selectedImages = allImages.slice(0, 5).map(img => ({ ...img }));
+    renderImageGrid();
+    renderImageStrip();
+    updateImgCounter();
+    updateNextBtn();
+    updateFooterHint();
+  } catch (err) {
+    document.getElementById('imgGrid').innerHTML =
+      `<div class="error-msg" style="grid-column:1/-1;">Failed to load images: ${esc(err.message)}</div>`;
+  } finally {
+    document.getElementById('imgLoading').style.display = 'none';
+  }
+}
+
+function renderImageGrid() {
+  const html = allImages.map((img, i) => {
+    const isSelected = selectedImages.some(s => s.url === img.url);
+    const order = selectedImages.findIndex(s => s.url === img.url);
+    return `
+      <div class="img-item${isSelected ? ' selected' : ''}" onclick="toggleImage(${i})" data-img-idx="${i}">
+        <img src="${esc(img.url)}" alt="${esc(img.description)}" onerror="this.src='${FALLBACK_IMG}'" />
+        <div class="img-check">${isSelected ? '\u2713' : ''}</div>
+        <div class="img-order">${order >= 0 ? order + 1 : ''}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('imgGrid').innerHTML = html;
+}
+
+function toggleImage(idx) {
+  const img = allImages[idx];
+  if (!img) return;
+
+  const existingIdx = selectedImages.findIndex(s => s.url === img.url);
+  if (existingIdx >= 0) {
+    // Deselect
+    selectedImages.splice(existingIdx, 1);
+  } else if (selectedImages.length < 5) {
+    // Select
+    selectedImages.push({ ...img });
+  }
+
+  renderImageGrid();
+  renderImageStrip();
+  updateImgCounter();
+  updateNextBtn();
+  updateFooterHint();
+
+  // Reset script if images change
+  script = null;
+  editedPrompt = null;
+}
+
+function renderImageStrip() {
+  if (selectedImages.length === 0) {
+    document.getElementById('imgStripWrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('imgStripWrap').style.display = 'block';
+  document.getElementById('imgStrip').innerHTML = selectedImages.map((img, i) => `
+    <div class="strip-item">
+      <img src="${esc(img.url)}" alt="" onerror="this.src='${FALLBACK_IMG}'" />
+      <div class="strip-label">Scene ${i + 1}</div>
+    </div>
+  `).join('');
+}
+
+function updateImgCounter() {
+  const counter = document.getElementById('imgCounter');
+  counter.innerHTML = `Selected: <span>${selectedImages.length}</span>/5`;
+}
+
+/* ── Step 3: Persona Selection ──────────────────────────────────── */
+function renderPersonas() {
+  const html = PERSONAS.map(p => `
+    <div class="persona-card${p.id === selectedPersona ? ' selected' : ''}"
+         onclick="selectPersona('${p.id}')" data-persona="${p.id}">
+      <div class="persona-radio"></div>
+      <div class="persona-icon">${p.icon}</div>
+      <div class="persona-name">${esc(p.name)}</div>
+      <div class="persona-desc">${esc(p.desc)}</div>
+    </div>
+  `).join('');
+  document.getElementById('personaGrid').innerHTML = html;
+}
+
+function selectPersona(id) {
+  if (selectedPersona !== id) {
+    script = null; // Reset script when persona changes
+    editedPrompt = null;
+  }
+  selectedPersona = id;
+  document.querySelectorAll('.persona-card').forEach(card => {
+    card.classList.toggle('selected', card.dataset.persona === id);
+  });
+  updateNextBtn();
+  updateFooterHint();
+}
+
+/* ── Step 4: Script Generation ──────────────────────────────────── */
+async function generateScript() {
+  document.getElementById('scriptLoading').style.display = 'block';
+  document.getElementById('scriptContent').style.display = 'none';
+
+  const destinations = [];
+  if (tourDetails) {
+    // Try to extract destination names from itinerary
+    const days = tourDetails.days || tourDetails.itinerary || [];
+    days.forEach(day => {
+      const locs = day.locations || [];
+      locs.forEach(loc => {
+        if (loc.cityName && !destinations.includes(loc.cityName)) {
+          destinations.push(loc.cityName);
+        }
+      });
+    });
+  }
+
+  const tourDesc = tourDetails?.description
+    ? strip(tourDetails.description).slice(0, 500)
+    : (selectedTour?.description ? strip(selectedTour.description).slice(0, 500) : '');
+
+  try {
+    const resp = await fetch('/api/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tourName: selectedTour.tour_name,
+        tourDescription: tourDesc,
+        destinations,
+        persona: selectedPersona,
+        imageDescriptions: selectedImages.map((img, i) => img.description || `Scene ${i + 1} image`)
+      })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Script generation failed');
+
+    script = data.script;
+    editedPrompt = script.full_prompt;
+    renderScript();
+    updateNextBtn();
+    updateFooterHint();
+  } catch (err) {
+    document.getElementById('scriptLoading').style.display = 'none';
+    document.getElementById('scriptContent').innerHTML =
+      `<div class="error-msg">Failed to generate script: ${esc(err.message)}</div>
+       <div style="text-align:center;margin-top:16px;">
+         <button class="btn btn-teal" onclick="generateScript()">Try Again</button>
+       </div>`;
+    document.getElementById('scriptContent').style.display = 'block';
+  }
+}
+
+function renderScript() {
+  document.getElementById('scriptLoading').style.display = 'none';
+
+  let html = '<div class="script-card">';
+
+  // Hook
+  html += `<div class="script-section" style="background:var(--teal-light);">
+    <div class="script-label script-label-hook">Hook (2s)</div>
+    <div class="script-text" style="font-weight:700;font-size:16px;color:var(--navy);">"${esc(script.hook)}"</div>
+  </div>`;
+
+  // Scenes
+  (script.scenes || []).forEach((scene, i) => {
+    const img = selectedImages[scene.image_index ?? i];
+    html += `<div class="script-section">
+      <div class="script-label script-label-scene">
+        Scene ${i + 1}
+        <span class="script-duration">${(scene.duration_seconds || 2).toFixed(1)}s</span>
+      </div>
+      <div class="script-scene">
+        ${img ? `<img class="script-scene-img" src="${esc(img.url)}" alt="" onerror="this.src='${FALLBACK_IMG}'" />` : ''}
+        <div class="script-scene-body">
+          <div class="script-text">${esc(scene.narration)}</div>
+          ${scene.on_screen_text ? `<div class="script-scene-overlay">${esc(scene.on_screen_text)}</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // CTA
+  html += `<div class="script-section" style="background:#F0FDF4;">
+    <div class="script-label script-label-cta">Call to Action</div>
+    <div class="script-text" style="font-weight:700;color:var(--success);">"${esc(script.cta)}"</div>
+  </div>`;
+
+  html += '</div>';
+
+  // Actions
+  html += `<div class="script-actions">
+    <button class="btn btn-back" onclick="toggleEditPrompt()">Edit Prompt</button>
+    <button class="btn btn-back" onclick="regenerateScript()">Regenerate</button>
+  </div>`;
+
+  // Editable prompt
+  html += `<div class="edit-prompt" id="editPromptArea">
+    <div class="edit-prompt-label">Video generation prompt (sent to Nano Banana)</div>
+    <textarea id="promptTextarea" oninput="editedPrompt=this.value">${esc(script.full_prompt)}</textarea>
+  </div>`;
+
+  document.getElementById('scriptContent').innerHTML = html;
+  document.getElementById('scriptContent').style.display = 'block';
+}
+
+function toggleEditPrompt() {
+  const area = document.getElementById('editPromptArea');
+  if (area) area.classList.toggle('visible');
+}
+
+async function regenerateScript() {
+  script = null;
+  editedPrompt = null;
+  updateNextBtn();
+  await generateScript();
+}
+
+/* ── Step 5: Video Creation ─────────────────────────────────────── */
+async function createVideo() {
+  document.getElementById('videoPreCreate').style.display = 'none';
+  document.getElementById('videoProgress').style.display = 'block';
+  document.getElementById('videoError').style.display = 'none';
+  document.getElementById('videoPlayer').style.display = 'none';
+  document.getElementById('createVideoBtn').disabled = true;
+
+  pollStartTime = Date.now();
+  pollCount = 0;
+  updateProgressElapsed();
+
+  try {
+    const resp = await fetch('/api/create-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image_urls: selectedImages.map(img => img.url),
+        prompt: editedPrompt || script.full_prompt,
+        resolution: '1080p',
+        duration: 12
+      })
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Video creation failed');
+
+    videoId = data.operation_name;
+    document.getElementById('progressStatus').textContent = 'Processing... downloading images and generating video';
+    startPolling();
+  } catch (err) {
+    showVideoError(err.message);
+  }
+}
+
+function startPolling() {
+  pollTimer = setInterval(async () => {
+    pollCount++;
+    updateProgressElapsed();
+
+    if (pollCount > 120) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      showVideoError('Video generation is taking longer than expected. It may still be processing.');
+      return;
+    }
+
+    try {
+      const resp = await fetch(`/api/video-status?op=${encodeURIComponent(videoId)}`);
+      const data = await resp.json();
+
+      if (data.status === 'completed' && data.video_url) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        videoUrl = data.video_url;
+        showVideoPlayer();
+      } else if (data.status === 'failed') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        showVideoError(data.error || 'Video generation failed. Please try again.');
+      } else {
+        document.getElementById('progressStatus').textContent =
+          data.status === 'queued' ? 'Queued... waiting to start' : 'Processing... this may take 2\u20135 minutes';
+      }
+    } catch (err) {
+      // Network error — keep polling
+      console.warn('Poll error:', err.message);
+    }
+  }, 5000);
+}
+
+function updateProgressElapsed() {
+  if (!pollStartTime) return;
+  const elapsed = Math.floor((Date.now() - pollStartTime) / 1000);
+  const min = Math.floor(elapsed / 60);
+  const sec = elapsed % 60;
+  document.getElementById('progressElapsed').textContent =
+    `Elapsed: ${min}:${sec.toString().padStart(2, '0')}`;
+}
+
+function showVideoPlayer() {
+  document.getElementById('videoProgress').style.display = 'none';
+  document.getElementById('videoPlayer').style.display = 'block';
+
+  const videoEl = document.getElementById('videoEl');
+  videoEl.src = videoUrl;
+  videoEl.load();
+
+  const downloadLink = document.getElementById('downloadLink');
+  downloadLink.href = videoUrl;
+}
+
+function showVideoError(msg) {
+  document.getElementById('videoProgress').style.display = 'none';
+  document.getElementById('videoError').textContent = msg;
+  document.getElementById('videoError').style.display = 'block';
+  document.getElementById('videoPreCreate').style.display = 'block';
+  document.getElementById('createVideoBtn').disabled = false;
+}
+
+/* ── Keyboard ───────────────────────────────────────────────────── */
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+});
+
+/* ── Elapsed timer for video progress ────────────────────────────── */
+setInterval(() => {
+  if (pollTimer && pollStartTime) updateProgressElapsed();
+}, 1000);
+
+/* ── Init ────────────────────────────────────────────────────────── */
+goToStep(1);
+</script>
+</body>
+</html>

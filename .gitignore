@@ -3,3 +3,5 @@ node_modules/
 *.pyc
 serve_static.py
 serve.rb
+.vercel
+.env

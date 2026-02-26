@@ -3,6 +3,11 @@
   "buildCommand": "",
   "outputDirectory": "public",
   "installCommand": "",
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 120
+    }
+  },
   "rewrites": [
     { "source": "/", "destination": "/chat.html" }
   ],
