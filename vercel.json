@@ -1,5 +1,8 @@
 {
+  "framework": null,
+  "buildCommand": "",
   "outputDirectory": "public",
+  "installCommand": "",
   "rewrites": [
     { "source": "/", "destination": "/chat.html" }
   ],
