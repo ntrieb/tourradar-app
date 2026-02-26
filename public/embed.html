@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TourRadar Chat — Embed Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+
+  /* --- Floating chat button --- */
+  #tr-chat-btn {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    width: 60px; height: 60px; border-radius: 50%; border: none;
+    background: #0B82C4; color: #fff; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .15s, box-shadow .15s;
+  }
+  #tr-chat-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+  #tr-chat-btn svg { width: 28px; height: 28px; }
+  #tr-chat-btn .close-icon { display: none; }
+  #tr-chat-btn.open .chat-icon { display: none; }
+  #tr-chat-btn.open .close-icon { display: block; }
+
+  /* --- Chat iframe container --- */
+  #tr-chat-frame {
+    position: fixed; bottom: 100px; right: 24px; z-index: 9998;
+    width: 420px; height: 620px;
+    border: none; border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.25);
+    opacity: 0; pointer-events: none;
+    transform: translateY(20px) scale(0.95);
+    transition: opacity .25s, transform .25s;
+  }
+  #tr-chat-frame.open {
+    opacity: 1; pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  /* Mobile: full screen */
+  @media (max-width: 500px) {
+    #tr-chat-frame {
+      width: 100vw; height: 100vh;
+      bottom: 0; right: 0;
+      border-radius: 0;
+    }
+    #tr-chat-btn { bottom: 16px; right: 16px; }
+  }
+
+  /* --- Demo page content --- */
+  .demo-page {
+    max-width: 800px; margin: 0 auto; padding: 60px 24px;
+  }
+  .demo-page h1 { font-size: 2rem; margin-bottom: 12px; color: #0D2847; }
+  .demo-page p { font-size: 1.1rem; color: #555; line-height: 1.6; margin-bottom: 16px; }
+  .demo-page code {
+    display: block; background: #1e1e2e; color: #a6e3a1; padding: 20px;
+    border-radius: 10px; font-size: 0.9rem; white-space: pre; overflow-x: auto;
+    margin: 20px 0; line-height: 1.5;
+  }
+  .demo-page h2 { font-size: 1.3rem; color: #0D2847; margin: 32px 0 12px; }
+</style>
+</head>
+<body>
+
+<div class="demo-page">
+  <h1>TourRadar Chat Widget</h1>
+  <p>Click the blue chat button in the bottom-right corner to open the AI tour search assistant.</p>
+
+  <h2>Embed Snippet</h2>
+  <p>Copy and paste this code into any HTML page to add the TourRadar chat widget:</p>
+  <code>&lt;!-- TourRadar Chat Widget --&gt;
+&lt;div id="tourradar-chat-widget"&gt;&lt;/div&gt;
+&lt;script&gt;
+(function(){
+  var CHAT_URL = 'https://tourradar-app.vercel.app/chat.html';
+
+  // Floating button
+  var btn = document.createElement('button');
+  btn.id = 'tr-chat-btn';
+  btn.setAttribute('aria-label','Open chat');
+  btn.innerHTML =
+    '&lt;svg class="chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;'
+    + '&lt;path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/&gt;&lt;/svg&gt;'
+    + '&lt;svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"&gt;'
+    + '&lt;line x1="18" y1="6" x2="6" y2="18"/&gt;&lt;line x1="6" y1="6" x2="18" y2="18"/&gt;&lt;/svg&gt;';
+
+  // Iframe
+  var frame = document.createElement('iframe');
+  frame.id = 'tr-chat-frame';
+  frame.src = CHAT_URL;
+  frame.allow = 'clipboard-write';
+
+  // Styles (injected so the snippet is self-contained)
+  var css = document.createElement('style');
+  css.textContent =
+    '#tr-chat-btn{position:fixed;bottom:24px;right:24px;z-index:9999;'
+    + 'width:60px;height:60px;border-radius:50%;border:none;'
+    + 'background:#0B82C4;color:#fff;cursor:pointer;'
+    + 'box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;'
+    + 'align-items:center;justify-content:center;'
+    + 'transition:transform .15s,box-shadow .15s}'
+    + '#tr-chat-btn:hover{transform:scale(1.08)}'
+    + '#tr-chat-btn svg{width:28px;height:28px}'
+    + '#tr-chat-btn .close-icon{display:none}'
+    + '#tr-chat-btn.open .chat-icon{display:none}'
+    + '#tr-chat-btn.open .close-icon{display:block}'
+    + '#tr-chat-frame{position:fixed;bottom:100px;right:24px;z-index:9998;'
+    + 'width:420px;height:620px;border:none;border-radius:16px;'
+    + 'box-shadow:0 8px 40px rgba(0,0,0,.25);opacity:0;pointer-events:none;'
+    + 'transform:translateY(20px) scale(.95);'
+    + 'transition:opacity .25s,transform .25s}'
+    + '#tr-chat-frame.open{opacity:1;pointer-events:auto;'
+    + 'transform:translateY(0) scale(1)}'
+    + '@media(max-width:500px){#tr-chat-frame{width:100vw;height:100vh;'
+    + 'bottom:0;right:0;border-radius:0}'
+    + '#tr-chat-btn{bottom:16px;right:16px}}';
+
+  document.head.appendChild(css);
+  document.body.appendChild(frame);
+  document.body.appendChild(btn);
+
+  btn.onclick = function(){
+    var open = btn.classList.toggle('open');
+    frame.classList.toggle('open', open);
+    btn.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
+  };
+})();
+&lt;/script&gt;</code>
+
+  <h2>Direct Iframe</h2>
+  <p>Or embed directly as a full-size iframe:</p>
+  <code>&lt;iframe
+  src="https://tourradar-app.vercel.app/chat.html"
+  width="100%" height="700"
+  style="border:none; border-radius:12px;"
+  allow="clipboard-write"
+&gt;&lt;/iframe&gt;</code>
+</div>
+
+<!-- Actual working widget on this page -->
+<button id="tr-chat-btn" aria-label="Open chat">
+  <svg class="chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  <svg class="close-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>
+</button>
+<iframe id="tr-chat-frame" src="https://tourradar-app.vercel.app/chat.html" allow="clipboard-write"></iframe>
+
+<script>
+  document.getElementById('tr-chat-btn').onclick = function() {
+    var open = this.classList.toggle('open');
+    document.getElementById('tr-chat-frame').classList.toggle('open', open);
+    this.setAttribute('aria-label', open ? 'Close chat' : 'Open chat');
+  };
+</script>
+
+</body>
+</html>
