@@ -725,11 +725,11 @@ async function doSearch() {
     }
 
     container.innerHTML = `<div class="tour-grid">${tours.map(t => {
-      const img = t.image_url || t.images?.[0] || FALLBACK_IMG;
-      const op = t.operator_name || '';
+      const img = t.image_url || (Array.isArray(t.image) ? t.image[0]?.url : t.image?.url) || t.images?.[0]?.url || t.images?.[0] || FALLBACK_IMG;
+      const op = t.operator_name || (typeof t.operator === 'object' ? t.operator?.name : '') || '';
       const name = t.tour_name || t.name || 'Tour';
-      const rating = t.rating || '';
-      const reviews = t.review_count || '';
+      const rating = t.rating || t.ratings?.overall || '';
+      const reviews = t.review_count || t.reviews_count || '';
       const city = typeof t.start_city === 'object' ? (t.start_city?.city_name || '') : (t.start_city || '');
       return `<div class="tcard" onclick="selectTour(${t.tour_id})" data-id="${t.tour_id}">
         <div class="tcard-check">\u2713</div>
@@ -1041,13 +1041,14 @@ async function regenerateScript() {
 
 /* ── Video Creation (Creatomate) ──────────────────────────────────── */
 async function createVideo() {
-  document.getElementById('scriptContent').style.display = 'none';
+  // Keep script content visible — show progress and video below it
   document.getElementById('videoProgress').style.display = 'block';
   document.getElementById('videoError').style.display = 'none';
   document.getElementById('videoPlayer').style.display = 'none';
+  document.getElementById('videoProgress').scrollIntoView({ behavior: 'smooth', block: 'center' });
 
   const createBtn = document.getElementById('createVideoBtn');
-  if (createBtn) createBtn.disabled = true;
+  if (createBtn) { createBtn.disabled = true; createBtn.textContent = 'Creating...'; }
 
   pollStartTime = Date.now();
   pollCount = 0;
@@ -1137,16 +1138,20 @@ function showVideoPlayer() {
 
   const downloadLink = document.getElementById('downloadLink');
   downloadLink.href = videoUrl;
+
+  // Re-enable create button for re-generation
+  const createBtn = document.getElementById('createVideoBtn');
+  if (createBtn) { createBtn.disabled = false; createBtn.textContent = 'Regenerate Video'; }
+
+  document.getElementById('videoPlayer').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function showVideoError(msg) {
   document.getElementById('videoProgress').style.display = 'none';
   document.getElementById('videoError').textContent = msg;
   document.getElementById('videoError').style.display = 'block';
-  // Show script content again so user can retry
-  document.getElementById('scriptContent').style.display = 'block';
   const createBtn = document.getElementById('createVideoBtn');
-  if (createBtn) createBtn.disabled = false;
+  if (createBtn) { createBtn.disabled = false; createBtn.textContent = 'Retry Video'; }
 }
 
 /* ── Keyboard ───────────────────────────────────────────────────── */

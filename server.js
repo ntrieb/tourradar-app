@@ -49,13 +49,17 @@ const PERSONAS = {
   }
 };
 
+// TourRadar branding for CTA ending
+
 // Persona-specific Creatomate video templates
+// Target ~15 seconds total: 5 scenes × ~2.6s + ~2.5s CTA ending
 const PERSONA_TEMPLATES = {
   sara_connected_wanderer: {
     font: 'Montserrat', fontWeight: 700,
-    accentColor: '#E8A87C', ctaBg: 'rgba(232,168,124,0.85)',
+    accentColor: '#E8A87C', ctaBg: 'rgba(232,168,124,0.9)',
     transition: 'fade', transitionDuration: 0.5,
-    sceneDuration: 2.0,
+    sceneDuration: 2.6,
+    ctaDuration: 2.5,
     animations: [
       { startScale: '100%', endScale: '120%' },
       { startScale: '120%', endScale: '100%', startX: '40%', endX: '60%' },
@@ -66,9 +70,10 @@ const PERSONA_TEMPLATES = {
   },
   michael_susan_leisure_lovers: {
     font: 'Playfair Display', fontWeight: 700,
-    accentColor: '#C9B037', ctaBg: 'rgba(201,176,55,0.85)',
-    transition: 'fade', transitionDuration: 0.8,
-    sceneDuration: 2.5,
+    accentColor: '#C9B037', ctaBg: 'rgba(201,176,55,0.9)',
+    transition: 'fade', transitionDuration: 0.6,
+    sceneDuration: 2.8,
+    ctaDuration: 2.8,
     animations: [
       { startScale: '105%', endScale: '115%' },
       { startScale: '115%', endScale: '105%', startX: '55%', endX: '45%' },
@@ -79,9 +84,10 @@ const PERSONA_TEMPLATES = {
   },
   ava_experience_explorer: {
     font: 'Poppins', fontWeight: 800,
-    accentColor: '#FF6B6B', ctaBg: 'rgba(255,107,107,0.85)',
+    accentColor: '#FF6B6B', ctaBg: 'rgba(255,107,107,0.9)',
     transition: 'slide', transitionDuration: 0.4,
-    sceneDuration: 1.5,
+    sceneDuration: 2.4,
+    ctaDuration: 2.2,
     animations: [
       { startScale: '100%', endScale: '130%' },
       { startScale: '130%', endScale: '100%', startX: '35%', endX: '65%' },
@@ -92,9 +98,10 @@ const PERSONA_TEMPLATES = {
   },
   peter_anne_cultural_adventurers: {
     font: 'Lora', fontWeight: 700,
-    accentColor: '#2D6A4F', ctaBg: 'rgba(45,106,79,0.85)',
-    transition: 'fade', transitionDuration: 0.6,
-    sceneDuration: 2.0,
+    accentColor: '#2D6A4F', ctaBg: 'rgba(45,106,79,0.9)',
+    transition: 'fade', transitionDuration: 0.5,
+    sceneDuration: 2.6,
+    ctaDuration: 2.5,
     animations: [
       { startScale: '100%', endScale: '118%' },
       { startScale: '118%', endScale: '100%', startX: '55%', endX: '45%' },
@@ -109,7 +116,7 @@ function buildCreatomateSource(imageUrls, script, personaId) {
   const tpl = PERSONA_TEMPLATES[personaId] || PERSONA_TEMPLATES.sara_connected_wanderer;
   const elements = [];
 
-  // Build 5 image elements on track 1 (sequential)
+  // ── Track 1: Image scenes ──────────────────────────────────────
   imageUrls.forEach((url, i) => {
     const anim = tpl.animations[i] || { startScale: '100%', endScale: '120%' };
     const panAnim = {
@@ -129,16 +136,18 @@ function buildCreatomateSource(imageUrls, script, personaId) {
       clip: true,
       animations: [panAnim]
     };
+
     if (i > 0) {
       imgEl.transition = {
         type: tpl.transition,
         duration: tpl.transitionDuration
       };
     }
+
     elements.push(imgEl);
   });
 
-  // Calculate effective scene times
+  // Calculate scene start times (accounting for transition overlaps)
   const sceneTimes = [];
   let t = 0;
   for (let i = 0; i < imageUrls.length; i++) {
@@ -146,84 +155,142 @@ function buildCreatomateSource(imageUrls, script, personaId) {
     t += tpl.sceneDuration;
     if (i > 0) t -= tpl.transitionDuration;
   }
+  const scenesEnd = t;
 
-  // Hook text overlay
+  // ── CTA ending scene (dark overlay with logo) ────
+  elements.push({
+    type: 'composition',
+    track: 1,
+    duration: tpl.ctaDuration,
+    transition: { type: 'fade', duration: 0.6 },
+    elements: [
+      {
+        type: 'shape',
+        shape: 'rectangle',
+        width: '100%',
+        height: '100%',
+        fill_color: '#0D2847'
+      }
+    ]
+  });
+  const ctaSceneStart = scenesEnd - 0.6;
+
+  // ── Track 2: Text overlays for each scene ──────────────────────
+
+  // Hook text (shown on scene 1)
   if (script.hook) {
     elements.push({
       type: 'text',
       track: 2,
       time: 0,
-      duration: tpl.sceneDuration,
+      duration: tpl.sceneDuration * 0.9,
       text: script.hook.toUpperCase(),
-      y: '20%',
-      width: '85%',
-      height: '15%',
+      y: '35%',
+      width: '88%',
       x_alignment: '50%',
       y_alignment: '50%',
       font_family: tpl.font,
       font_weight: tpl.fontWeight,
-      font_size_maximum: '9 vmin',
+      font_size_maximum: '10 vmin',
       fill_color: '#ffffff',
-      shadow: { color: 'rgba(0,0,0,0.6)', blur: 5, x: 0, y: 2 },
+      shadow: { color: 'rgba(0,0,0,0.7)', blur: 6, x: 0, y: 3 },
       animations: [
-        { type: 'text-slide', duration: 0.4, easing: 'quadratic-out', scope: 'element', direction: '0°' }
+        { type: 'text-slide', duration: 0.5, easing: 'quadratic-out', scope: 'element', direction: '0°' }
       ]
     });
   }
 
-  // Scene text overlays
+  // Scene text overlays (one per image scene)
   const scenes = script.scenes || [];
   scenes.forEach((scene, i) => {
     if (!scene.on_screen_text) return;
     const sceneStart = sceneTimes[i] || 0;
-    if (i === 0 && script.hook) return; // hook covers first scene
 
     elements.push({
       type: 'text',
       track: 2,
-      time: sceneStart,
-      duration: tpl.sceneDuration * 0.85,
+      time: sceneStart + 0.2,
+      duration: tpl.sceneDuration * 0.8,
       text: scene.on_screen_text,
-      y: '72%',
+      y: (i === 0 && script.hook) ? '55%' : '70%',
       width: '85%',
-      height: '12%',
       x_alignment: '50%',
       y_alignment: '50%',
       font_family: tpl.font,
       font_weight: tpl.fontWeight,
-      font_size_maximum: '6.5 vmin',
+      font_size_maximum: (i === 0 && script.hook) ? '6 vmin' : '7 vmin',
       fill_color: '#ffffff',
-      shadow: { color: 'rgba(0,0,0,0.6)', blur: 4, x: 0, y: 2 },
+      shadow: { color: 'rgba(0,0,0,0.65)', blur: 5, x: 0, y: 2 },
       animations: [
-        { type: 'text-slide', duration: 0.3, easing: 'quadratic-out', scope: 'element', direction: '0°' }
+        { type: 'text-slide', duration: 0.35, easing: 'quadratic-out', scope: 'element', direction: '0°' }
       ]
     });
   });
 
-  // CTA text overlay
+  // ── Track 2: CTA ending text overlays ──────────────────────────
+  // TourRadar brand name
+  elements.push({
+    type: 'text',
+    track: 2,
+    time: ctaSceneStart + 0.3,
+    duration: tpl.ctaDuration - 0.3,
+    text: 'TourRadar',
+    x: '50%',
+    y: '35%',
+    width: '80%',
+    x_alignment: '50%',
+    y_alignment: '50%',
+    font_family: 'Montserrat',
+    font_weight: 700,
+    font_size_maximum: '14 vmin',
+    fill_color: '#ffffff',
+    animations: [
+      { type: 'scale', start_scale: '80%', duration: 0.5, easing: 'quadratic-out', fade: true }
+    ]
+  });
+
+  // CTA text
   if (script.cta) {
-    const ctaStart = sceneTimes[sceneTimes.length - 1] || 0;
     elements.push({
       type: 'text',
       track: 3,
-      time: ctaStart + tpl.sceneDuration * 0.15,
-      duration: tpl.sceneDuration * 0.85,
+      time: ctaSceneStart + 0.5,
+      duration: tpl.ctaDuration - 0.5,
       text: script.cta,
-      y: '80%',
-      width: '70%',
-      height: '8%',
+      y: '60%',
+      width: '75%',
       x_alignment: '50%',
       y_alignment: '50%',
       font_family: tpl.font,
       font_weight: tpl.fontWeight,
-      font_size_maximum: '5.5 vmin',
+      font_size_maximum: '7 vmin',
       fill_color: '#ffffff',
       background_color: tpl.ctaBg,
-      background_x_padding: '15%',
-      background_y_padding: '30%',
-      background_border_radius: '8%',
+      background_x_padding: '18%',
+      background_y_padding: '35%',
+      background_border_radius: '50%',
       animations: [
-        { type: 'scale', start_scale: '80%', duration: 0.3, easing: 'quadratic-out', fade: true }
+        { type: 'scale', start_scale: '85%', duration: 0.4, easing: 'quadratic-out', fade: true }
+      ]
+    });
+
+    // "tourradar.com" below CTA
+    elements.push({
+      type: 'text',
+      track: 4,
+      time: ctaSceneStart + 0.8,
+      duration: tpl.ctaDuration - 0.8,
+      text: 'tourradar.com',
+      y: '75%',
+      width: '60%',
+      x_alignment: '50%',
+      y_alignment: '50%',
+      font_family: tpl.font,
+      font_weight: 400,
+      font_size_maximum: '4 vmin',
+      fill_color: 'rgba(255,255,255,0.7)',
+      animations: [
+        { type: 'fade', duration: 0.5, easing: 'quadratic-out' }
       ]
     });
   }
