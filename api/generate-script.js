@@ -1,28 +1,27 @@
 const PERSONAS = {
-  adventure_seeker: {
-    name: 'Adventure Seeker',
-    tone: 'energetic, bold, uses action verbs, speaks to thrill-seekers',
-    style: 'Fast-paced, exciting, emphasizes unique experiences and adrenaline'
+  sara_connected_wanderer: {
+    name: 'Sara: The Connected Wanderer',
+    age: '27-40',
+    tone: 'polished, aspirational, authentic, speaks to self-improvement and enriching experiences',
+    style: 'Curated and thoughtful, balances adventure with comfort, emphasizes safety, quality, and reliability'
   },
-  luxury_traveler: {
-    name: 'Luxury Traveler',
-    tone: 'sophisticated, refined, emphasizes exclusivity and comfort',
-    style: 'Elegant, aspirational, focuses on premium experiences and indulgence'
+  michael_susan_leisure_lovers: {
+    name: 'Michael & Susan: Leisure Lovers',
+    age: '55+',
+    tone: 'warm, refined, reassuring, speaks to bucket-list dreams and cultural richness',
+    style: 'Elegant and relaxed, emphasizes smaller groups, high-end accommodations, hassle-free logistics, and rich cultural experiences'
   },
-  family_explorer: {
-    name: 'Family Explorer',
-    tone: 'warm, inclusive, highlights family-friendly aspects and memories',
-    style: 'Heartwarming, practical, emphasizes bonding and discovery together'
+  ava_experience_explorer: {
+    name: 'Ava: The Experience Explorer',
+    age: '18-27',
+    tone: 'energetic, trendy, social media-savvy, speaks to FOMO and visual excitement',
+    style: 'Fun and social, emphasizes Instagrammable moments, group dynamics, affordability, and ease of booking'
   },
-  culture_enthusiast: {
-    name: 'Culture Enthusiast',
-    tone: 'curious, knowledgeable, passionate about history and local traditions',
-    style: 'Educational yet entertaining, focuses on authenticity and depth'
-  },
-  budget_backpacker: {
-    name: 'Budget Backpacker',
-    tone: 'casual, relatable, emphasizes value and authentic local experiences',
-    style: 'Down-to-earth, inspiring, shows that great travel is accessible'
+  peter_anne_cultural_adventurers: {
+    name: 'Peter & Anne: Cultural Adventurers',
+    age: '40-60',
+    tone: 'knowledgeable, active, appreciative, speaks to well-rounded cultural experiences',
+    style: 'Balanced adventure and culture, emphasizes all-inclusive packages, high-quality accommodations, hiking, biking, and cultural events'
   }
 };
 
@@ -57,26 +56,39 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
-        system: `You are a social media video scriptwriter for travel tours. You create compelling 12-second video scripts that match a specific persona's voice and tone.
+        system: `You are a social media video text copywriter for travel tours. You write VERY SHORT, punchy on-screen text overlays for portrait (9:16) slideshow videos.
 
-Persona: ${p.name}
+Persona: ${p.name} (Age ${p.age})
 Tone: ${p.tone}
 Style: ${p.style}
 
-You will receive information about a tour and 5 images that will be used in the video. Create a script that:
-1. Opens with a hook (2 seconds)
-2. Has 5 scenes, one per image (approximately 2 seconds each)
-3. Ends with a call-to-action
-4. Total duration must be exactly 12 seconds
+You will receive info about a tour and 5 images. Generate text overlays that will appear on screen during the video. The video is a slideshow with Ken Burns zoom/pan effects, transitions, and text overlays.
 
-Respond ONLY with valid JSON in this exact format (no markdown fences):
+CRITICAL RULES:
+- ALL text must be extremely short: 2-4 words MAXIMUM per overlay
+- Text must match the persona's voice precisely
+- Hook grabs attention instantly in the persona's style
+- Scene overlays are punchy, evocative, persona-appropriate
+- CTA drives action in the persona's language
+- No hashtags, no emojis in the text
+
+Examples by persona:
+- Sara (Connected Wanderer): Hook "Discover La Dolce Vita" | Scene "Pure Italian Charm" | CTA "Plan Your Escape"
+- Michael & Susan (Leisure Lovers): Hook "Your Italian Dream" | Scene "Timeless Elegance" | CTA "Start Your Journey"
+- Ava (Experience Explorer): Hook "Italy Awaits You" | Scene "Total Vibe Check" | CTA "Book It Now"
+- Peter & Anne (Cultural Adventurers): Hook "Explore Ancient Italy" | Scene "Rich Heritage Awaits" | CTA "Explore & Discover"
+
+Respond ONLY with valid JSON (no markdown fences):
 {
-  "hook": "Opening text shown on screen",
+  "hook": "2-4 word hook text",
   "scenes": [
-    { "image_index": 0, "narration": "Voiceover text for this scene", "on_screen_text": "Short overlay text", "duration_seconds": 2.0 }
+    { "image_index": 0, "on_screen_text": "2-4 word overlay" },
+    { "image_index": 1, "on_screen_text": "2-4 word overlay" },
+    { "image_index": 2, "on_screen_text": "2-4 word overlay" },
+    { "image_index": 3, "on_screen_text": "2-4 word overlay" },
+    { "image_index": 4, "on_screen_text": "2-4 word overlay" }
   ],
-  "cta": "Closing call-to-action text",
-  "full_prompt": "Complete prompt for video generation AI describing the visual style, transitions, pacing, and mood for a cinematic travel video using these 5 images"
+  "cta": "2-4 word call-to-action"
 }`,
         messages: [{
           role: 'user',
@@ -87,7 +99,7 @@ Destinations: ${(destinations || []).join(', ') || 'Various'}
 Images (in sequence order):
 ${imageDescriptions.map((d, i) => `${i + 1}. ${d}`).join('\n')}
 
-Create a 12-second social media video script for this tour.`
+Generate very short (2-4 words each) on-screen text overlays for this tour video, written in the voice of ${p.name}.`
         }]
       })
     });
