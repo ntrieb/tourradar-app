@@ -193,7 +193,10 @@ function buildCreatomateSource(imageUrls, script, personaId) {
       font_weight: tpl.fontWeight,
       font_size_maximum: '10 vmin',
       fill_color: '#ffffff',
-      shadow: { color: 'rgba(0,0,0,0.7)', blur: 6, x: 0, y: 3 },
+      background_color: 'rgba(0,0,0,0.55)',
+      background_x_padding: '20%',
+      background_y_padding: '30%',
+      background_border_radius: '8%',
       animations: [
         { type: 'text-slide', duration: 0.5, easing: 'quadratic-out', scope: 'element', direction: '0°' }
       ]
@@ -220,7 +223,10 @@ function buildCreatomateSource(imageUrls, script, personaId) {
       font_weight: tpl.fontWeight,
       font_size_maximum: (i === 0 && script.hook) ? '6 vmin' : '7 vmin',
       fill_color: '#ffffff',
-      shadow: { color: 'rgba(0,0,0,0.65)', blur: 5, x: 0, y: 2 },
+      background_color: 'rgba(0,0,0,0.5)',
+      background_x_padding: '18%',
+      background_y_padding: '25%',
+      background_border_radius: '8%',
       animations: [
         { type: 'text-slide', duration: 0.35, easing: 'quadratic-out', scope: 'element', direction: '0°' }
       ]
