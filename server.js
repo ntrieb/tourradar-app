@@ -13,6 +13,23 @@ app.use(express.json());
 app.use((req, res, next) => { res.removeHeader('X-Frame-Options'); next(); });
 app.use(express.static(join(__dirname, 'public')));
 
+// Clean URLs for landing pages
+app.get('/europe', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'europe.html'));
+});
+app.get('/italy', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'italy.html'));
+});
+app.get('/japan', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'japan.html'));
+});
+app.get('/australia', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'australia.html'));
+});
+app.get('/solo-europe', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'solo-europe.html'));
+});
+
 const MCP_URL = 'https://ai.tourradar.com/mcp/main';
 
 // Claude API client (initialized lazily)

@@ -9,7 +9,12 @@
     }
   },
   "rewrites": [
-    { "source": "/", "destination": "/chat.html" }
+    { "source": "/", "destination": "/chat.html" },
+    { "source": "/europe", "destination": "/europe.html" },
+    { "source": "/italy", "destination": "/italy.html" },
+    { "source": "/japan", "destination": "/japan.html" },
+    { "source": "/australia", "destination": "/australia.html" },
+    { "source": "/solo-europe", "destination": "/solo-europe.html" }
   ],
   "headers": [
     {
